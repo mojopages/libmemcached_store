@@ -1,3 +1,3 @@
 module LibmemcachedStore
-  VERSION = "0.4".freeze
+  VERSION = "0.4.0".freeze
 end
