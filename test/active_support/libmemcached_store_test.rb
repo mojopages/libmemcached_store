@@ -85,7 +85,8 @@ module CacheStoreBehavior
     @cache.write('foo', 'bar', :compress => true)
     raw_value = @cache.send(:read_entry, 'foo', {}).raw_value
     assert_equal 'bar', @cache.read('foo')
-    assert_equal 'bar', Marshal.load(raw_value)
+    value = Marshal.load(raw_value) rescue raw_value
+    assert_equal 'bar', value
   end
 
   def test_read_and_write_compressed_large_data

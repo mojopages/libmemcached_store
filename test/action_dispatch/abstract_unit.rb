@@ -30,8 +30,12 @@ class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
 
   def self.build_app(routes = nil)
     RoutedRackApp.new(routes || ActionDispatch::Routing::RouteSet.new) do |middleware|
-      middleware.use "ActionDispatch::ShowExceptions", ActionDispatch::PublicExceptions.new("/dev/null")
-      middleware.use "ActionDispatch::DebugExceptions"
+      if defined?(ActionDispatch::PublicExceptions)
+        middleware.use "ActionDispatch::ShowExceptions", ActionDispatch::PublicExceptions.new("/dev/null")
+        middleware.use "ActionDispatch::DebugExceptions"
+      else
+        middleware.use "ActionDispatch::ShowExceptions"
+      end
       middleware.use "ActionDispatch::Callbacks"
       middleware.use "ActionDispatch::ParamsParser"
       middleware.use "ActionDispatch::Cookies"
