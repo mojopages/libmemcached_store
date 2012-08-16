@@ -30,15 +30,17 @@ module ActiveSupport
       end
 
       def increment(key, amount = 1, options = nil)
-        log 'incrementing', key, amount
-        @cache.incr(key, amount)
+        instrument(:increment, key, amount: amount) do
+          @cache.incr(key, amount)
+        end
       rescue Memcached::Error
         nil
       end
 
       def decrement(key, amount = 1, options = nil)
-        log 'decrementing', key, amount
-        @cache.decr(key, amount)
+        instrument(:decrement, key, amount: amount) do
+          @cache.decr(key, amount)
+        end
       rescue Memcached::Error
         nil
       end
