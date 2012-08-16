@@ -101,6 +101,8 @@ module ActiveSupport
       def delete_entry(key, options = nil)
         @cache.delete(key)
         true
+      rescue Memcached::NotFound
+        false
       rescue Memcached::Error => e
         log_error(e)
         false

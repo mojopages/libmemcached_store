@@ -156,6 +156,12 @@ module CacheStoreBehavior
     assert !@cache.exist?('foo')
   end
 
+  def test_delete_with_unexistent_key
+    @cache.expects(:log_error).never
+    assert !@cache.exist?('foo')
+    assert_equal false, @cache.delete('foo')
+  end
+
   def test_read_should_return_a_different_object_id_each_time_it_is_called
     @cache.write('foo', 'bar')
     refute_equal @cache.read('foo').object_id, @cache.read('foo').object_id
