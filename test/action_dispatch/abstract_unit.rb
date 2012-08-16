@@ -24,10 +24,6 @@ class RoutedRackApp
 end
 
 class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
-  # setup do
-  #   @routes = SharedTestRoutes
-  # end
-
   def self.build_app(routes = nil)
     RoutedRackApp.new(routes || ActionDispatch::Routing::RouteSet.new) do |middleware|
       if defined?(ActionDispatch::PublicExceptions)

@@ -32,6 +32,10 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
       session[:bar] = "baz"
       head :ok
     end
+
+    def self._routes
+      SharedTestRoutes
+    end
   end
 
   def test_setting_and_getting_session_value

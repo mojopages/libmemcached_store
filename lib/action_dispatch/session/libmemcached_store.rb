@@ -56,6 +56,17 @@ module ActionDispatch
         end
       end
 
+      #
+      # Deprecated since Rails 3.1.0
+      #
+      def destroy(env)
+        if sid = current_session_id(env)
+          with_lock(env, false) do
+            @pool.delete(sid)
+          end
+        end 
+      end
+
       def with_lock(env, default)
         @mutex.lock if env['rack.multithread']
         yield

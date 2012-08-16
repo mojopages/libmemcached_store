@@ -63,7 +63,11 @@ module CacheStoreBehavior
 
   def test_should_read_and_write_false
     assert @cache.write('foo', false)
-    assert_equal false, @cache.read('foo')
+    if ActiveSupport::VERSION::MAJOR == 3 && ActiveSupport::VERSION::MINOR == 0
+      assert_equal nil, @cache.read('foo')
+    else
+      assert_equal false, @cache.read('foo')
+    end
   end
 
   def test_read_multi
