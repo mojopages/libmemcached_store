@@ -45,6 +45,27 @@ module ActiveSupport
         nil
       end
 
+      #
+      # Optimize read_multi to only make one call to memcached
+      # server.
+      #
+      def read_multi(*names)
+        options = names.extract_options!
+        options = merged_options(options)
+
+        return {} if names.empty?
+
+        keys_to_names = Hash[names.map {|name| [namespaced_key(name, options), name] }]
+        raw_values = @cache.get(keys_to_names.keys, false)
+
+        values = {}
+        raw_values.each do |key, value|
+          entry = deserialize_entry(value)
+          values[keys_to_names[key]] = entry.value unless entry.expired?
+        end
+        values
+      end
+
       def clear
         @cache.flush
       end
