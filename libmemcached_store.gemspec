@@ -20,7 +20,6 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency("memcached", ">= 0")
-  s.add_dependency('i18n', '~> 0.6')
 
   s.add_development_dependency('rack')
   s.add_development_dependency('rake')
