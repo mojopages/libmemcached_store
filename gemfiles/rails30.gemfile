@@ -1,5 +1,7 @@
-gemspec :path => '../'
+source "http://rubygems.org"
 
-gem 'mocha'
 gem 'activesupport', '~> 3.0.0'
 gem 'actionpack', '~> 3.0.0'
+gem 'mocha'
+
+gemspec :path => '../'
