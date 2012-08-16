@@ -61,11 +61,24 @@ module CacheStoreBehavior
     assert_equal nil, @cache.read('foo')
   end
 
+  def test_should_read_and_write_false
+    assert @cache.write('foo', false)
+    assert_equal false, @cache.read('foo')
+  end
+
   def test_read_multi
     @cache.write('foo', 'bar')
     @cache.write('fu', 'baz')
     @cache.write('fud', 'biz')
     assert_equal({"foo" => "bar", "fu" => "baz"}, @cache.read_multi('foo', 'fu'))
+  end
+
+  def test_read_multi_with_expires
+    @cache.write('foo', 'bar', :expires_in => 0.001)
+    @cache.write('fu', 'baz')
+    @cache.write('fud', 'biz')
+    sleep(0.002)
+    assert_equal({"fu" => "baz"}, @cache.read_multi('foo', 'fu'))
   end
 
   def test_read_and_write_compressed_small_data
@@ -136,6 +149,11 @@ module CacheStoreBehavior
     assert @cache.exist?('foo')
     assert_equal true, @cache.delete('foo')
     assert !@cache.exist?('foo')
+  end
+
+  def test_read_should_return_a_different_object_id_each_time_it_is_called
+    @cache.write('foo', 'bar')
+    refute_equal @cache.read('foo').object_id, @cache.read('foo').object_id
   end
 
   def test_store_objects_should_be_immutable
@@ -242,14 +260,14 @@ module CacheStoreBehavior
   end
 
   # def test_really_long_keys
-    # key = ""
-    # 1000.times{key << "x"}
-    # assert_equal true, @cache.write(key, "bar")
-    # assert_equal "bar", @cache.read(key)
-    # assert_equal "bar", @cache.fetch(key)
-    # assert_nil @cache.read("#{key}x")
-    # assert_equal({key => "bar"}, @cache.read_multi(key))
-    # assert_equal true, @cache.delete(key)
+  #   key = ""
+  #   900.times{key << "x"}
+  #   assert @cache.write(key, "bar")
+  #   assert_equal "bar", @cache.read(key)
+  #   assert_equal "bar", @cache.fetch(key)
+  #   assert_nil @cache.read("#{key}x")
+  #   assert_equal({key => "bar"}, @cache.read_multi(key))
+  #   assert @cache.delete(key)
   # end
 end
 
