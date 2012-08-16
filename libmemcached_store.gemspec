@@ -3,10 +3,10 @@ $:.push File.expand_path("../lib", __FILE__)
 require "version"
 
 Gem::Specification.new do |s|
-  s.name        = "libmemcached_store"
+  s.name        = "rails3_libmemcached_store"
   s.version     = LibmemcachedStore::VERSION.dup
   s.platform    = Gem::Platform::RUBY
-  s.summary     = "ActiveSupport cache store for the C-based libmemcached client"
+  s.summary     = "ActiveSupport 3+ cache store for the C-based libmemcached client"
   s.email       = "cocchi.c@gmail.com"
   s.homepage    = "http://github.com/ccocchi/libmemcached_store"
   s.description = %q{An ActiveSupport cache store that uses the C-based libmemcached client through
