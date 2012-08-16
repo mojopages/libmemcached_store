@@ -8,35 +8,57 @@ This cache is designed for Rails 3+ applications.
 
 You'll need the memcached gem installed:
 
-  gem install memcached
+```ruby  
+gem install memcached
+```
 
 or in your Gemfile  
 
-  gem 'memcached'
+```ruby
+gem 'memcached'
+```
 
 There are no other dependencies.
+
+## Installation
+
+Just add to your Gemfile
+
+```ruby
+gem 'rails3_libmemcached_store'
+```
+
+and you're set.
 
 ## Usage
 
 This is a drop-in replacement for the memcache store that ships with Rails. To
-enable, set the `config.cache_store` option to `:libmemcached_store`
+enable, set the `config.cache_store` option to `libmemcached_store`
 in the config for your environment
 
-  config.cache_store = :libmemcached_store
+```ruby
+config.cache_store = :libmemcached_store
+```
 
 If no servers are specified, localhost is assumed. You can specify a list of
 server addresses, either as hostnames or IP addresses, with or without a port
 designation. If no port is given, 11211 is assumed:
 
-  config.cache_store = :libmemcached_store, %w(cache-01 cache-02 127.0.0.1:11212)
+```ruby
+config.cache_store = :libmemcached_store, %w(cache-01 cache-02 127.0.0.1:11212)
+```
 
 Other options are passed directly to the memcached client
   
-  config.cache_store = :libmemcached_store, 127.0.0.1:11211, default_ttl: 3600, compress: true
+```ruby
+config.cache_store = :libmemcached_store, '127.0.0.1:11211', :default_ttl => 3600, :compress => true
+```
 
 You can also use `:libmemcached_store` to store your application sessions
 
-  config.session_store = :libmemcached_store, namespace: '_session', expire_after: 1800
+```ruby
+config.session_store = :libmemcached_store, :namespace => '_session', :expire_after => 1800
+```
 
 ## Props
 
