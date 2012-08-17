@@ -300,6 +300,12 @@ module CacheIncrementDecrementBehavior
     assert_equal 1, @cache.decrement('foo')
     assert_equal 1, @cache.read('foo').to_i
   end
+
+  def test_increment_decrement_non_existing_keys
+    @cache.expects(:log_error).never
+    assert_nil @cache.increment('foo')
+    assert_nil @cache.decrement('bar')
+  end
 end
 
 class LibmemcachedStoreTest < MiniTest::Unit::TestCase

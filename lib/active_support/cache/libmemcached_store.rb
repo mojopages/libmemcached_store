@@ -33,7 +33,10 @@ module ActiveSupport
         instrument(:increment, key, amount: amount) do
           @cache.incr(key, amount)
         end
-      rescue Memcached::Error
+      rescue Memcached::NotFound
+        nil
+      rescue Memcached::Error => e
+        log_error(e)
         nil
       end
 
@@ -41,7 +44,10 @@ module ActiveSupport
         instrument(:decrement, key, amount: amount) do
           @cache.decr(key, amount)
         end
-      rescue Memcached::Error
+      rescue Memcached::NotFound
+        nil
+      rescue Memcached::Error => e
+        log_error(e)
         nil
       end
 
