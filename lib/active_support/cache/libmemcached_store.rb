@@ -130,11 +130,11 @@ module ActiveSupport
         return {} if names.empty?
 
         mapping = Hash[names.map {|name| [escape(expanded_key(name)), name] }]
-        raw_values = @cache.get(mapping.keys, !options[:raw])
+        raw_values, flags = @cache.get(mapping.keys, false, true)
 
         values = {}
         raw_values.each do |key, value|
-          values[mapping[key]] = value
+          values[mapping[key]] = deserialize(value, options[:raw], flags[key])
         end
         values
       end
@@ -152,11 +152,7 @@ module ActiveSupport
       def read_entry(key, options = nil)
         options ||= {}
         raw_value, flags = @cache.get(escape(key), false, true)
-
-        raw_value = Zlib::Inflate.inflate(raw_value) if (flags & FLAG_COMPRESSED) != 0
-        options[:raw] ? raw_value : Marshal.load(raw_value)
-      rescue TypeError, ArgumentError
-        raw_value
+        deserialize(raw_value, options[:raw], flags)
       rescue Memcached::NotFound
         nil
       rescue Memcached::Error => e
@@ -193,6 +189,13 @@ module ActiveSupport
       end
 
       private
+
+      def deserialize(value, raw = false, flags = 0)
+        value = Zlib::Inflate.inflate(value) if (flags & FLAG_COMPRESSED) != 0
+        raw ? value : Marshal.load(value)
+      rescue TypeError, ArgumentError
+        value
+      end
 
       def escape(key)
         key.to_s.force_encoding("BINARY").gsub(ESCAPE_KEY_CHARS) { |match|
