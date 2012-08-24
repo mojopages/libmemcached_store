@@ -1,6 +1,8 @@
 require 'memcached'
 require 'memcached/get_with_flags'
 
+require 'digest/md5'
+
 module ActiveSupport
   module Cache
 
@@ -35,6 +37,9 @@ module ActiveSupport
         if options[:namespace]
           client_options[:prefix_key] = options.delete(:namespace)
           client_options[:prefix_delimiter] = ':'
+          @namespace_length = client_options[:prefix_key].length + 1
+        else
+          @namespace_length = 0
         end
         client_options[:default_ttl] = options.delete(:expires_in).to_i if options[:expires_in]
 
@@ -102,7 +107,7 @@ module ActiveSupport
       def increment(key, amount = 1, options = nil)
         key = expanded_key(key)
         instrument(:increment, key, amount: amount) do
-          @cache.incr(escape(key), amount)
+          @cache.incr(escape_and_normalize(key), amount)
         end
       rescue Memcached::NotFound
         nil
@@ -114,7 +119,7 @@ module ActiveSupport
       def decrement(key, amount = 1, options = nil)
         key = expanded_key(key)
         instrument(:decrement, key, amount: amount) do
-          @cache.decr(escape(key), amount)
+          @cache.decr(escape_and_normalize(key), amount)
         end
       rescue Memcached::NotFound
         nil
@@ -129,7 +134,7 @@ module ActiveSupport
 
         return {} if names.empty?
 
-        mapping = Hash[names.map {|name| [escape(expanded_key(name)), name] }]
+        mapping = Hash[names.map {|name| [escape_and_normalize(expanded_key(name)), name] }]
         raw_values, flags = @cache.get(mapping.keys, false, true)
 
         values = {}
@@ -151,7 +156,7 @@ module ActiveSupport
 
       def read_entry(key, options = nil)
         options ||= {}
-        raw_value, flags = @cache.get(escape(key), false, true)
+        raw_value, flags = @cache.get(escape_and_normalize(key), false, true)
         deserialize(raw_value, options[:raw], flags)
       rescue Memcached::NotFound
         nil
@@ -171,7 +176,7 @@ module ActiveSupport
           flags |= FLAG_COMPRESSED
         end
 
-        @cache.send(method, escape(key), entry, options[:expires_in].to_i, false, flags)
+        @cache.send(method, escape_and_normalize(key), entry, options[:expires_in].to_i, false, flags)
         true
       rescue Memcached::Error => e
         log_error(e)
@@ -179,7 +184,7 @@ module ActiveSupport
       end
 
       def delete_entry(key, options = nil)
-        @cache.delete(escape(key))
+        @cache.delete(escape_and_normalize(key))
         true
       rescue Memcached::NotFound
         false
@@ -197,10 +202,14 @@ module ActiveSupport
         value
       end
 
-      def escape(key)
-        key.to_s.force_encoding("BINARY").gsub(ESCAPE_KEY_CHARS) { |match|
-           "%#{match.getbyte(0).to_s(16).upcase}"
-        }
+      def escape_and_normalize(key)
+        key = key.to_s.force_encoding("BINARY").gsub(ESCAPE_KEY_CHARS) { |match| "%#{match.getbyte(0).to_s(16).upcase}" }
+        key_length = key.length
+
+        return key if @namespace_length + key_length <= 250
+
+        max_key_length = 213 - @namespace_length
+        "#{key[0, max_key_length]}:md5:#{Digest::MD5.hexdigest(key)}"
       end
 
       def expanded_key(key) # :nodoc:
