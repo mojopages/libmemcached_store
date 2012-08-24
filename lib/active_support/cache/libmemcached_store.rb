@@ -1,37 +1,108 @@
 require 'memcached'
-
-class ActiveSupport::Cache::Entry
-  # In 3.0 all values returned from Rails.cache.read are frozen.
-  # This makes sense for an in-memory store storing object references,
-  # but for a marshalled store we should be able to modify things.
-  # Starting with 3.2, values are not frozen anymore.
-  def value_with_dup
-    result = value_without_dup
-    result.frozen? && result.duplicable? ? result.dup : result
-  end
-  alias_method_chain :value, :dup
-end
+require 'memcached/get_with_flags'
 
 module ActiveSupport
   module Cache
+
+    #
+    # Store using memcached gem as client
+    #
+    # Global options can be passed to be applied to each method by default.
+    # Supported options are
+    # * <tt>:compress</tt> : if set to true, data will be compress before stored
+    # * <tt>:compress_threshold</tt> : specify the threshold at which to compress
+    # value, default is 4K
+    # * <tt>:namespace</tt> : prepend each key with this value for simple namespacing
+    # * <tt>:expires_in</tt> : default TTL in seconds for each. Default value is 0, i.e. forever
+    # Specific value can be passed per key with write and fetch command.
+    #
+    # Options can also be passed direclty to the memcache client, via the <tt>:client</tt>
+    # option. For example, if you want to use pipelining, you can use
+    # :client => { :no_block => true }
+    #
     class LibmemcachedStore < Store
       attr_reader :addresses
 
-      DEFAULT_OPTIONS = {
-        :distribution => :consistent_ketama,
-        :binary_protocol => true
-      }
+      DEFAULT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
+      ESCAPE_KEY_CHARS = /[\x00-\x20%\x7F-\xFF]/n
+      DEFAULT_COMPRESS_THRESHOLD = 4096
+      FLAG_COMPRESSED = 0x2
 
       def initialize(*addresses)
         addresses.flatten!
-        @options = addresses.extract_options!
+        options = addresses.extract_options!
+        client_options = options.delete(:client) || {}
+        if options[:namespace]
+          client_options[:prefix_key] = options.delete(:namespace)
+          client_options[:prefix_delimiter] = ':'
+        end
+        client_options[:default_ttl] = options.delete(:expires_in).to_i if options[:expires_in]
+
+        @options = options.reverse_merge(compress_threshold: DEFAULT_COMPRESS_THRESHOLD)
         @addresses = addresses
-        @cache = Memcached.new(@addresses, @options.reverse_merge(DEFAULT_OPTIONS))
+        @cache = Memcached.new(@addresses, client_options.reverse_merge(DEFAULT_OPTIONS))
+        @cache.instance_eval { send(:extend, GetWithFlags) }
+      end
+
+      def fetch(key, options = nil)
+        if block_given?
+          key = expanded_key(key)
+          unless options && options[:force]
+            entry = instrument(:read, key, options) do |payload|
+              payload[:super_operation] = :fetch if payload
+              read_entry(key, options)
+            end
+          end
+
+          if entry.nil?
+            result = instrument(:generate, key, options) do |payload|
+              yield
+            end
+            write_entry(key, result, options)
+            result
+          else
+            instrument(:fetch_hit, key, options) { |payload| }
+            entry
+          end
+        else
+          read(key, options)
+        end
+      end
+
+      def read(key, options = nil)
+        key = expanded_key(key)
+        instrument(:read, key, options) do |payload|
+          entry = read_entry(key, options)
+          payload[:hit] = !!entry if payload
+          entry
+        end
+      end
+
+      def write(key, value, options = nil)
+        key = expanded_key(key)
+        instrument(:write, key, options) do |payload|
+          write_entry(key, value, options)
+        end
+      end
+
+      def delete(key, options = nil)
+        key = expanded_key(key)
+        instrument(:delete, key) do |payload|
+          delete_entry(key, options)
+        end
+      end
+
+      def exist?(key, options = nil)
+        key = expanded_key(key)
+        instrument(:exist?, key) do |payload|
+          !read_entry(key, options).nil?
+        end
       end
 
       def increment(key, amount = 1, options = nil)
+        key = expanded_key(key)
         instrument(:increment, key, amount: amount) do
-          @cache.incr(key, amount)
+          @cache.incr(escape(key), amount)
         end
       rescue Memcached::NotFound
         nil
@@ -41,8 +112,9 @@ module ActiveSupport
       end
 
       def decrement(key, amount = 1, options = nil)
+        key = expanded_key(key)
         instrument(:decrement, key, amount: amount) do
-          @cache.decr(key, amount)
+          @cache.decr(escape(key), amount)
         end
       rescue Memcached::NotFound
         nil
@@ -51,23 +123,18 @@ module ActiveSupport
         nil
       end
 
-      #
-      # Optimize read_multi to only make one call to memcached
-      # server.
-      #
       def read_multi(*names)
+        names.flatten!
         options = names.extract_options!
-        options = merged_options(options)
 
         return {} if names.empty?
 
-        keys_to_names = Hash[names.map {|name| [namespaced_key(name, options), name] }]
-        raw_values = @cache.get(keys_to_names.keys, false)
+        mapping = Hash[names.map {|name| [escape(expanded_key(name)), name] }]
+        raw_values = @cache.get(mapping.keys, !options[:raw])
 
         values = {}
         raw_values.each do |key, value|
-          entry = deserialize_entry(value)
-          values[keys_to_names[key]] = entry.value unless entry.expired?
+          values[mapping[key]] = value
         end
         values
       end
@@ -83,7 +150,13 @@ module ActiveSupport
       protected
 
       def read_entry(key, options = nil)
-        deserialize_entry(@cache.get(key, false))
+        options ||= {}
+        raw_value, flags = @cache.get(escape(key), false, true)
+
+        raw_value = Zlib::Inflate.inflate(raw_value) if (flags & FLAG_COMPRESSED) != 0
+        options[:raw] ? raw_value : Marshal.load(raw_value)
+      rescue TypeError, ArgumentError
+        raw_value
       rescue Memcached::NotFound
         nil
       rescue Memcached::Error => e
@@ -91,13 +164,18 @@ module ActiveSupport
         nil
       end
 
-      # Set the key to the given value. Pass :unless_exist => true if you want to
-      # skip setting a key that already exists.
       def write_entry(key, entry, options = nil)
-        method = (options && options[:unless_exist]) ? :add : :set
-        value = options[:raw] ? entry.value.to_s : entry
+        options = options ? @options.merge(options) : @options
+        method = options[:unless_exist] ? :add : :set
+        entry = options[:raw] ? entry.to_s : Marshal.dump(entry)
+        flags = 0
 
-        @cache.send(method, key, value, expires_in(options), marshal?(options))
+        if options[:compress] && entry.bytesize >= options[:compress_threshold]
+          entry = Zlib::Deflate.deflate(entry)
+          flags |= FLAG_COMPRESSED
+        end
+
+        @cache.send(method, escape(key), entry, options[:expires_in].to_i, false, flags)
         true
       rescue Memcached::Error => e
         log_error(e)
@@ -105,7 +183,7 @@ module ActiveSupport
       end
 
       def delete_entry(key, options = nil)
-        @cache.delete(key)
+        @cache.delete(escape(key))
         true
       rescue Memcached::NotFound
         false
@@ -115,21 +193,28 @@ module ActiveSupport
       end
 
       private
-      def deserialize_entry(raw_value)
-        if raw_value
-          entry = Marshal.load(raw_value) rescue raw_value
-          entry.is_a?(Entry) ? entry : Entry.new(entry)
-        else
-          nil
+
+      def escape(key)
+        key.to_s.force_encoding("BINARY").gsub(ESCAPE_KEY_CHARS) { |match|
+           "%#{match.getbyte(0).to_s(16).upcase}"
+        }
+      end
+
+      def expanded_key(key) # :nodoc:
+        return key.cache_key.to_s if key.respond_to?(:cache_key)
+
+        case key
+        when Array
+          if key.size > 1
+            key = key.collect { |element| expanded_key(element) }
+          else
+            key = key.first
+          end
+        when Hash
+          key = key.sort_by { |k,_| k.to_s }.collect { |k, v| "#{k}=#{v}" }
         end
-      end
 
-      def expires_in(options)
-        (options || {})[:expires_in].to_i
-      end
-
-      def marshal?(options)
-        !(options || {})[:raw]
+        key.to_param
       end
 
       def log_error(exception)
