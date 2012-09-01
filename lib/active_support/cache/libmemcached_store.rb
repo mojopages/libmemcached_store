@@ -25,7 +25,7 @@ module ActiveSupport
     class LibmemcachedStore < Store
       attr_reader :addresses
 
-      DEFAULT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
+      DEFAULT_CLIENT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
       ESCAPE_KEY_CHARS = /[\x00-\x20%\x7F-\xFF]/n
       DEFAULT_COMPRESS_THRESHOLD = 4096
       FLAG_COMPRESSED = 0x2
@@ -45,7 +45,7 @@ module ActiveSupport
 
         @options = options.reverse_merge(compress_threshold: DEFAULT_COMPRESS_THRESHOLD)
         @addresses = addresses
-        @cache = Memcached.new(@addresses, client_options.reverse_merge(DEFAULT_OPTIONS))
+        @cache = Memcached.new(@addresses, client_options.reverse_merge(DEFAULT_CLIENT_OPTIONS))
         @cache.instance_eval { send(:extend, GetWithFlags) }
       end
 
