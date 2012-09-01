@@ -224,6 +224,7 @@ module CacheStoreBehavior
 
   def test_really_long_keys_with_namespace
     @cache = ActiveSupport::Cache.lookup_store(:libmemcached_store, :expires_in => 60, :namespace => 'namespace')
+    @cache.silence!
     test_really_long_keys
   end
 end

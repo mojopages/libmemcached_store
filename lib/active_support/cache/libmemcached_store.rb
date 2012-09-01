@@ -22,13 +22,30 @@ module ActiveSupport
     # option. For example, if you want to use pipelining, you can use
     # :client => { :no_block => true }
     #
-    class LibmemcachedStore < Store
+    class LibmemcachedStore
       attr_reader :addresses
 
       DEFAULT_CLIENT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
       ESCAPE_KEY_CHARS = /[\x00-\x20%\x7F-\xFF]/n
       DEFAULT_COMPRESS_THRESHOLD = 4096
       FLAG_COMPRESSED = 0x2
+
+      attr_reader :silence, :options
+      alias_method :silence?, :silence
+
+      # Silence the logger.
+      def silence!
+        @silence = true
+        self
+      end
+
+      # Silence the logger within a block.
+      def mute
+        previous_silence, @silence = defined?(@silence) && @silence, true
+        yield
+      ensure
+        @silence = previous_silence
+      end
 
       def initialize(*addresses)
         addresses.flatten!
@@ -229,9 +246,30 @@ module ActiveSupport
         key.to_param
       end
 
+      def instrument(operation, key, options=nil)
+        log(operation, key, options)
+
+        if ActiveSupport::Cache::Store.instrument
+          payload = { :key => key }
+          payload.merge!(options) if options.is_a?(Hash)
+          ActiveSupport::Notifications.instrument("cache_#{operation}.active_support", payload){ yield(payload) }
+        else
+          yield(nil)
+        end
+      end
+
+      def log(operation, key, options=nil)
+        return unless !silence? && logger && logger.debug?
+        logger.debug("Cache #{operation}: #{key}#{options.blank? ? "" : " (#{options.inspect})"}")
+      end
+
       def log_error(exception)
-        return unless logger && logger.error?
+        return unless !silence? && logger && logger.error?
         logger.error "MemcachedError (#{exception.inspect}): #{exception.message}"
+      end
+
+      def logger
+        Rails.logger
       end
     end
   end
