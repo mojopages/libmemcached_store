@@ -1,17 +1,17 @@
 require 'memcached'
-require 'rack/session/abstract/id'
+require 'action_dispatch/middleware/session/abstract_store'
 
 module ActionDispatch
   module Session
     class LibmemcachedStore < AbstractStore
 
-      DEFAULT_OPTIONS = Rack::Session::Abstract::ID::DEFAULT_OPTIONS.merge(:prefix_key => 'rack:session', :memcache_server => 'localhost:11211')
-
       def initialize(app, options = {})
         options[:expire_after] ||= options[:expires]
         super
+        client_options = { default_ttl: options.fetch(:expire_after, 0) }
+        client_options[:namespace] = options[:namespace] || 'rack:session'
         @mutex = Mutex.new
-        @pool = options[:cache] || Memcached.new(@default_options[:memcache_server], @default_options)
+        @pool = options[:cache] || Memcached.new(@default_options[:memcache_server], client_options)
       end
 
       private
@@ -40,8 +40,7 @@ module ActionDispatch
       end
 
       def set_session(env, session_id, new_session, options = {})
-        expiry  = options[:expire_after]
-        expiry = expiry.nil? ? 0 : expiry + 1
+        expiry = options[:expire_after].to_i
 
         with_lock(env, false) do
           @pool.set(session_id, new_session, expiry)
@@ -64,7 +63,7 @@ module ActionDispatch
           with_lock(env, false) do
             @pool.delete(sid)
           end
-        end 
+        end
       end
 
       def with_lock(env, default)
