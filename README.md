@@ -48,10 +48,16 @@ designation. If no port is given, 11211 is assumed:
 config.cache_store = :libmemcached_store, %w(cache-01 cache-02 127.0.0.1:11212)
 ```
 
-Other options are passed directly to the memcached client
+Standard Rails cache store options can be used
+
+```ruby
+config.cache_store = :libmemcached_store, '127.0.0.1:11211', :compress => true, :expires_in => 3600
+```
+
+More advanced options can be passed directly to the client
   
 ```ruby
-config.cache_store = :libmemcached_store, '127.0.0.1:11211', :default_ttl => 3600, :compress => true
+config.cache_store = :libmemcached_store, '127.0.0.1:11211', :client => { :binary_protocol => true, :no_block => true }
 ```
 
 You can also use `:libmemcached_store` to store your application sessions
@@ -59,6 +65,11 @@ You can also use `:libmemcached_store` to store your application sessions
 ```ruby
 config.session_store = :libmemcached_store, :namespace => '_session', :expire_after => 1800
 ```
+
+## Performance
+
+Used with Rails, __libmemcached_store__ is at least 1.5x faster than __dalli__. See [BENCHMARKS](https://github.com/ccocchi/libmemcached_store/blob/master/BENCHMARKS)
+for details
 
 ## Props
 
