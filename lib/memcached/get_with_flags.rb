@@ -13,12 +13,17 @@ module GetWithFlags
       value, key, flags, ret = Memcached::Lib.memcached_fetch_rvalue(@struct)
       while ret != 21 do # Lib::MEMCACHED_END
         if ret == 0 # Lib::MEMCACHED_SUCCESS
-          hash[key] = (marshal ? Marshal.load(value) : value)
+          hash[key] = value
           flags_hash[key] = flags if with_flags
         elsif ret != 16 # Lib::MEMCACHED_NOTFOUND
           check_return_code(ret, key)
         end
         value, key, flags, ret = Memcached::Lib.memcached_fetch_rvalue(@struct)
+      end
+      if marshal
+        hash.each do |key, value|
+          hash[key] = Marshal.load(value)
+        end
       end
       with_flags ? [hash, flags_hash] : hash
     else
