@@ -8,11 +8,11 @@ This cache is designed for Rails 3+ applications.
 
 You'll need the memcached gem installed:
 
-```ruby  
+```ruby
 gem install memcached
 ```
 
-or in your Gemfile  
+or in your Gemfile
 
 ```ruby
 gem 'memcached'
@@ -55,7 +55,7 @@ config.cache_store = :libmemcached_store, '127.0.0.1:11211', :compress => true, 
 ```
 
 More advanced options can be passed directly to the client
-  
+
 ```ruby
 config.cache_store = :libmemcached_store, '127.0.0.1:11211', :client => { :binary_protocol => true, :no_block => true }
 ```
@@ -63,6 +63,7 @@ config.cache_store = :libmemcached_store, '127.0.0.1:11211', :client => { :binar
 You can also use `:libmemcached_store` to store your application sessions
 
 ```ruby
+require 'action_dispatch/session/libmemcached_store'
 config.session_store = :libmemcached_store, :namespace => '_session', :expire_after => 1800
 ```
 
