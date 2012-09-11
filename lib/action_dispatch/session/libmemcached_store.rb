@@ -20,7 +20,7 @@ module ActionDispatch
         loop do
           sid = super
           begin
-            @pool.get(sid)
+            @pool.exist(sid)
           rescue Memcached::NotFound
             break sid
           end
