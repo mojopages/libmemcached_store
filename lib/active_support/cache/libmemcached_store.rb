@@ -117,8 +117,15 @@ module ActiveSupport
       def exist?(key, options = nil)
         key = expanded_key(key)
         instrument(:exist?, key) do |payload|
-          !read_entry(key, options).nil?
+          if @cache.respond_to?(:exist)
+            @cache.exist(escape_and_normalize(key))
+            true
+          else
+            read_entry(key, options) != nil
+          end
         end
+      rescue Memcached::NotFound
+        false
       end
 
       def increment(key, amount = 1, options = nil)
