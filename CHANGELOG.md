@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.1
+  * make clear not blow up when options are passed
+
 ## 0.5.0
   * Use Memcached#exist if available (performance improvement ~25%)
   * Correctly escape bad characters and too long keys
