@@ -227,6 +227,18 @@ module CacheStoreBehavior
     @cache.silence!
     test_really_long_keys
   end
+
+  def test_clear
+    @cache.write("foo", "bar")
+    @cache.clear
+    assert_nil @cache.read("foo")
+  end
+
+  def test_clear_with_options
+    @cache.write("foo", "bar")
+    @cache.clear(:some_option => true)
+    assert_nil @cache.read("foo")
+  end
 end
 
 module CacheIncrementDecrementBehavior
@@ -325,23 +337,5 @@ class LibmemcachedStoreTest < MiniTest::Unit::TestCase
     refute cache.silence?
     cache.silence!
     assert cache.silence?
-  end
-
-  def test_clear
-    @cache.write("xxx", 1)
-    assert_equal 1, @cache.read("xxx")
-    @cache.clear
-
-    # everything is gone
-    assert_nil @cache.read("xxx")
-  end
-
-  def test_clear_with_options
-    @cache.write("xxx", 1)
-    assert_equal 1, @cache.read("xxx")
-    @cache.clear(:some_option => true) # does not blow up
-
-    # everything is gone
-    assert_nil @cache.read("xxx")
   end
 end
