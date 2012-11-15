@@ -168,7 +168,7 @@ module ActiveSupport
         values
       end
 
-      def clear
+      def clear(options = nil)
         @cache.flush
       end
 
