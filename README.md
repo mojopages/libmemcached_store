@@ -51,13 +51,13 @@ config.cache_store = :libmemcached_store, %w(cache-01 cache-02 127.0.0.1:11212)
 Standard Rails cache store options can be used
 
 ```ruby
-config.cache_store = :libmemcached_store, '127.0.0.1:11211', :compress => true, :expires_in => 3600
+config.cache_store = :libmemcached_store, '127.0.0.1:11211', {:compress => true, :expires_in => 3600}
 ```
 
 More advanced options can be passed directly to the client
 
 ```ruby
-config.cache_store = :libmemcached_store, '127.0.0.1:11211', :client => { :binary_protocol => true, :no_block => true }
+config.cache_store = :libmemcached_store, '127.0.0.1:11211', {:client => { :binary_protocol => true, :no_block => true }}
 ```
 
 You can also use `:libmemcached_store` to store your application sessions
