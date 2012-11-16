@@ -1,7 +1,3 @@
 language: ruby
 rvm:
   - 1.9.3
-gemfile:
-  - gemfiles/rails30.gemfile
-  - gemfiles/rails31.gemfile
-  - gemfiles/rails32.gemfile
