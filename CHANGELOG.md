@@ -1,6 +1,7 @@
 # Changelog
 
-## 0.5.1 (unreleased)
+## 0.5.1
+  * Remove warning from latest version of mocha
   * Make #clear compatible with Rails.cache#clear (grosser)
 
 ## 0.5.0
