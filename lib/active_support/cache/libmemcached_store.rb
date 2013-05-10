@@ -166,6 +166,11 @@ module ActiveSupport
           values[mapping[key]] = deserialize(value, options[:raw], flags[key])
         end
         values
+      rescue Memcached::NotFound
+        {}
+      rescue Memcached::Error => e
+        log_error(e)
+        {}
       end
 
       def clear(options = nil)
