@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+  * New gem name _libmemcached_store_
+  * Handle Memcached::Error in read_multi (staugaard)
+
 ## 0.5.1
   * Remove warning from latest version of mocha
   * Make #clear compatible with Rails.cache#clear (grosser)

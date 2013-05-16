@@ -25,7 +25,7 @@ There are no other dependencies.
 Just add to your Gemfile
 
 ```ruby
-gem 'rails3_libmemcached_store'
+gem 'libmemcached_store', '~> 0.6.0'
 ```
 
 and you're set.
