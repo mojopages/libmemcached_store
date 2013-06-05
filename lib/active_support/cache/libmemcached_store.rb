@@ -23,6 +23,10 @@ module ActiveSupport
     # :client => { :no_block => true }
     #
     class LibmemcachedStore
+      class MemcachedWithFlags < Memcached
+        include GetWithFlags
+      end
+
       attr_reader :addresses
 
       DEFAULT_CLIENT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
@@ -62,8 +66,7 @@ module ActiveSupport
 
         @options = options.reverse_merge(compress_threshold: DEFAULT_COMPRESS_THRESHOLD)
         @addresses = addresses
-        @cache = Memcached.new(@addresses, client_options.reverse_merge(DEFAULT_CLIENT_OPTIONS))
-        @cache.instance_eval { send(:extend, GetWithFlags) }
+        @cache = MemcachedWithFlags.new(@addresses, client_options.reverse_merge(DEFAULT_CLIENT_OPTIONS))
       end
 
       def fetch(key, options = nil)
