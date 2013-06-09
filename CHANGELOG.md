@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.1
+ * Subclass Memcached instead of modifying the instance (staugaard)
+
 ## 0.6.0
   * New gem name _libmemcached_store_
   * Handle Memcached::Error in read_multi (staugaard)
