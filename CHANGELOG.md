@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.2
+  * Add :hit to the #fetch payload
+
 ## 0.6.1
  * Subclass Memcached instead of modifying the instance (staugaard)
 
