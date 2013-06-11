@@ -74,8 +74,12 @@ module ActiveSupport
           key = expanded_key(key)
           unless options && options[:force]
             entry = instrument(:read, key, options) do |payload|
-              payload[:super_operation] = :fetch if payload
-              read_entry(key, options)
+              read_entry(key, options).tap do |result|
+                if payload
+                  payload[:super_operation] = :fetch
+                  payload[:hit] = !!result
+                end
+              end
             end
           end
 
