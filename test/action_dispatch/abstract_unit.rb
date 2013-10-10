@@ -3,7 +3,11 @@ require 'active_support/core_ext/module/delegation'
 require 'active_support/core_ext/module/attribute_accessors'
 require 'action_controller'
 require 'action_dispatch/routing'
-require 'action_dispatch/middleware/head'
+if ActionPack::VERSION::MAJOR >= 4
+  require 'rack/head'
+else
+  require 'action_dispatch/middleware/head'
+end
 require 'action_dispatch/testing/assertions'
 require 'action_dispatch/testing/test_process'
 require 'action_dispatch/testing/integration'
@@ -36,7 +40,11 @@ class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
       middleware.use "ActionDispatch::ParamsParser"
       middleware.use "ActionDispatch::Cookies"
       middleware.use "ActionDispatch::Flash"
-      middleware.use "ActionDispatch::Head"
+      if ActionPack::VERSION::MAJOR >= 4
+        middleware.use "Rack::Head"
+      else
+        middleware.use "ActionDispatch::Head"
+      end
       yield(middleware) if block_given?
     end
   end
