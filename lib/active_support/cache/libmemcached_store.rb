@@ -27,6 +27,23 @@ module ActiveSupport
         include GetWithFlags
       end
 
+      class FetchWithRaceConditionTTLEntry
+        attr_accessor :value, :extended
+
+        def initialize(value, expires_in)
+          @value, @extended = value, false
+          @expires_at = Time.now.to_i + expires_in
+        end
+
+        def expires_in
+          [@expires_at - Time.now.to_i, 1].max # never set to 0 -> never expires
+        end
+
+        def expired?
+          @expires_at <= Time.now.to_i
+        end
+      end
+
       attr_reader :addresses
 
       DEFAULT_CLIENT_OPTIONS = { distribution: :consistent_ketama, binary_protocol: true, default_ttl: 0 }
@@ -96,6 +113,31 @@ module ActiveSupport
         else
           read(key, options)
         end
+      end
+
+      def fetch_with_race_condition_ttl(key, options={}, &block)
+        options = options.dup
+
+        race_ttl = options.delete(:race_condition_ttl) || raise("Use :race_condition_ttl option or normal fetch")
+        expires_in = options.fetch(:expires_in)
+        options[:expires_in] = expires_in + race_ttl
+        options[:preserve_race_condition_entry] = true
+
+        value = fetch(key, options) { FetchWithRaceConditionTTLEntry.new(yield, expires_in) }
+
+        return value unless value.is_a?(FetchWithRaceConditionTTLEntry)
+
+        if value.expired? && !value.extended
+          # we take care of refreshing the cache, all others should keep reading
+          value.extended = true
+          write(key, value, options.merge(:expires_in => value.expires_in + race_ttl))
+
+          # calculate new value and store it
+          value = FetchWithRaceConditionTTLEntry.new(yield, expires_in)
+          write(key, value, options)
+        end
+
+        value.value
       end
 
       def read(key, options = nil)
@@ -191,7 +233,8 @@ module ActiveSupport
       def read_entry(key, options = nil)
         options ||= {}
         raw_value, flags = @cache.get(escape_and_normalize(key), false, true)
-        deserialize(raw_value, options[:raw], flags)
+        value = deserialize(raw_value, options[:raw], flags)
+        convert_race_condition_entry(value, options)
       rescue Memcached::NotFound
         nil
       rescue Memcached::Error => e
@@ -228,6 +271,14 @@ module ActiveSupport
       end
 
       private
+
+      def convert_race_condition_entry(value, options)
+        if !options[:preserve_race_condition_entry] && value.is_a?(FetchWithRaceConditionTTLEntry)
+          value.value
+        else
+          value
+        end
+      end
 
       def deserialize(value, raw = false, flags = 0)
         value = Zlib::Inflate.inflate(value) if (flags & FLAG_COMPRESSED) != 0
