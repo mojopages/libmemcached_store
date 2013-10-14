@@ -171,7 +171,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
   def with_test_route_set
     with_routing do |set|
       set.draw do
-        match ':action', :to => TestController
+        get ':action', :to => TestController
       end
 
       @app = self.class.build_app(set) do |middleware|
