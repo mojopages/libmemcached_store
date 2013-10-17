@@ -1,4 +1,4 @@
-require 'test_helper'
+require_relative '../test_helper'
 require File.expand_path('../abstract_unit', __FILE__)
 require 'action_dispatch/session/libmemcached_store'
 
@@ -38,7 +38,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_setting_and_getting_session_value
+  test "setting and getting session value" do
     with_test_route_set do
       get '/set_session_value'
       assert_response :success
@@ -50,7 +50,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_getting_nil_session_value
+  test "getting nil session value" do
     with_test_route_set do
       get '/get_session_value'
       assert_response :success
@@ -58,7 +58,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_getting_session_value_after_session_reset
+  test "getting session value after session reset" do
     with_test_route_set do
       get '/set_session_value'
       assert_response :success
@@ -77,7 +77,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_getting_from_nonexistent_session
+  test "getting from nonexistent session" do
     with_test_route_set do
       get '/get_session_value'
       assert_response :success
@@ -86,7 +86,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_setting_session_value_after_session_reset
+  test "setting session value after session reset" do
     with_test_route_set do
       get '/set_session_value'
       assert_response :success
@@ -107,7 +107,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_getting_session_id
+  test "getting session id" do
     with_test_route_set do
       get '/set_session_value'
       assert_response :success
@@ -120,7 +120,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_deserializes_unloaded_class
+  test "deserializes unloaded class" do
     with_test_route_set do
       with_autoload_path "session_autoload_test" do
         get '/set_serialized_session_value'
@@ -139,7 +139,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_doesnt_write_session_cookie_if_session_id_is_already_exists
+  test "doesnt write session cookie if session id is already exists" do
     with_test_route_set do
       get '/set_session_value'
       assert_response :success
@@ -151,7 +151,7 @@ class LibMemcachedStoreTest < ActionDispatch::IntegrationTest
     end
   end
 
-  def test_prevents_session_fixation
+  test "prevents session fixation" do
     with_test_route_set do
       get '/get_session_value'
       assert_response :success
