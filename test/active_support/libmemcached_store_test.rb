@@ -340,11 +340,11 @@ describe ActiveSupport::Cache::LibmemcachedStore do
     assert cache.silence?
   end
 
-  describe "#fetch_with_race_condition_ttl" do
+  describe "#fetch with :race_condition_ttl" do
     let(:options) { {:expires_in => 1, :race_condition_ttl => 5} }
 
     def fetch(&block)
-      @cache.fetch_with_race_condition_ttl("unknown", options, &block)
+      @cache.fetch("unknown", options, &block)
     end
 
     after do

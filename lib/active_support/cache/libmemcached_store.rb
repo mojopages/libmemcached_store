@@ -86,29 +86,33 @@ module ActiveSupport
         @cache = MemcachedWithFlags.new(@addresses, DEFAULT_CLIENT_OPTIONS.merge(client_options))
       end
 
-      def fetch(key, options = nil)
+      def fetch(key, options = nil, &block)
         if block_given?
-          key = expanded_key(key)
-          unless options && options[:force]
-            entry = instrument(:read, key, options) do |payload|
-              read_entry(key, options).tap do |result|
-                if payload
-                  payload[:super_operation] = :fetch
-                  payload[:hit] = !!result
+          if options && options[:race_condition_ttl]
+            fetch_with_race_condition_ttl(key, options, &block)
+          else
+            key = expanded_key(key)
+            unless options && options[:force]
+              entry = instrument(:read, key, options) do |payload|
+                read_entry(key, options).tap do |result|
+                  if payload
+                    payload[:super_operation] = :fetch
+                    payload[:hit] = !!result
+                  end
                 end
               end
             end
-          end
 
-          if entry.nil?
-            result = instrument(:generate, key, options) do |payload|
-              yield
+            if entry.nil?
+              result = instrument(:generate, key, options) do |payload|
+                yield
+              end
+              write_entry(key, result, options)
+              result
+            else
+              instrument(:fetch_hit, key, options) { |payload| }
+              entry
             end
-            write_entry(key, result, options)
-            result
-          else
-            instrument(:fetch_hit, key, options) { |payload| }
-            entry
           end
         else
           read(key, options)
