@@ -64,9 +64,9 @@ module ActiveSupport
         end
         client_options[:default_ttl] = options.delete(:expires_in).to_i if options[:expires_in]
 
-        @options = options.reverse_merge(compress_threshold: DEFAULT_COMPRESS_THRESHOLD)
+        @options = {compress_threshold: DEFAULT_COMPRESS_THRESHOLD}.merge(options)
         @addresses = addresses
-        @cache = MemcachedWithFlags.new(@addresses, client_options.reverse_merge(DEFAULT_CLIENT_OPTIONS))
+        @cache = MemcachedWithFlags.new(@addresses, DEFAULT_CLIENT_OPTIONS.merge(client_options))
       end
 
       def fetch(key, options = nil)
