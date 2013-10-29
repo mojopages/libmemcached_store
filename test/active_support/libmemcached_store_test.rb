@@ -357,14 +357,16 @@ describe ActiveSupport::Cache::LibmemcachedStore do
 
     it "keeps a cached value even if the cache expires" do
       fetch { 1 } # fill it
-      Timecop.travel 3.seconds.from_now do
-        Thread.new do
-          sleep 0.1
-          fetch { raise }.must_equal 1 # 3rd fetch -> read expired value
-        end
-        fetch { sleep 0.2; 2 }.must_equal 2 # 2nd fetch -> takes time to generate but returns correct value
-        fetch { 3 }.must_equal 2 # 4th fetch still correct value
+
+      future = Time.now + 3 * 60
+      Time.stubs(:now).returns future
+
+      Thread.new do
+        sleep 0.1
+        fetch { raise }.must_equal 1 # 3rd fetch -> read expired value
       end
+      fetch { sleep 0.2; 2 }.must_equal 2 # 2nd fetch -> takes time to generate but returns correct value
+      fetch { 3 }.must_equal 2 # 4th fetch still correct value
     end
 
     it "can be read by a normal read" do
