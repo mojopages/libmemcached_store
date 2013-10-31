@@ -339,4 +339,50 @@ describe ActiveSupport::Cache::LibmemcachedStore do
     cache.silence!
     assert cache.silence?
   end
+
+  describe "#fetch with :race_condition_ttl" do
+    let(:options) { {:expires_in => 1, :race_condition_ttl => 5} }
+
+    def fetch(&block)
+      @cache.fetch("unknown", options, &block)
+    end
+
+    after do
+      Thread.list.each { |t| t.exit unless t == Thread.current }
+    end
+
+    it "works like a normal fetch" do
+      fetch { 1 }.must_equal 1
+    end
+
+    it "keeps a cached value even if the cache expires" do
+      fetch { 1 } # fill it
+
+      future = Time.now + 3 * 60
+      Time.stubs(:now).returns future
+
+      Thread.new do
+        sleep 0.1
+        fetch { raise }.must_equal 1 # 3rd fetch -> read expired value
+      end
+      fetch { sleep 0.2; 2 }.must_equal 2 # 2nd fetch -> takes time to generate but returns correct value
+      fetch { 3 }.must_equal 2 # 4th fetch still correct value
+    end
+
+    it "can be read by a normal read" do
+      fetch { 1 }
+      @cache.read("unknown").must_equal 1
+    end
+
+    it "can be read by a normal fetch" do
+      fetch { 1 }
+      @cache.fetch("unknown") { 2 }.must_equal 1
+    end
+
+    it "can write to things that get fetched" do
+      fetch { 1 }
+      @cache.write "unknown", 2
+      fetch { 1 }.must_equal 2
+    end
+  end
 end
