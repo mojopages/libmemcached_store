@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+  * Add support for memcached 1.7 (grosser)
+  * Test with Rails 4 (grosser)
+  * Add race_condition_ttl option to #fetch (grosser)
+
 ## 0.6.2
   * Add :hit to the #fetch payload
 
