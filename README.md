@@ -64,7 +64,7 @@ You can also use `:libmemcached_store` to store your application sessions
 
 ```ruby
 require 'action_dispatch/session/libmemcached_store'
-config.session_store = :libmemcached_store, :namespace => '_session', :expire_after => 1800
+config.session_store :libmemcached_store, :namespace => '_session', :expire_after => 1800
 ```
 
 ## Performance
