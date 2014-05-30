@@ -1,11 +1,8 @@
-# -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "version"
+require "./lib/memcached/version"
 
 Gem::Specification.new do |s|
   s.name        = "libmemcached_store"
-  s.version     = LibmemcachedStore::VERSION.dup
-  s.platform    = Gem::Platform::RUBY
+  s.version     = LibmemcachedStore::VERSION
   s.summary     = "ActiveSupport 3+ cache store for the C-based libmemcached client"
   s.email       = "cocchi.c@gmail.com"
   s.homepage    = "http://github.com/ccocchi/libmemcached_store"
@@ -14,12 +11,9 @@ Gem::Specification.new do |s|
       and supports consistent hashing, non-blocking IO, and graceful server failover.}
   s.authors     = ["Christopher Cocchi-Perrier", "Ben Hutton", "Jeffrey Hardy"]
 
-  s.files         = `git ls-files`.split("\n")
-  s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
-  s.require_paths = ["lib"]
+  s.files         = `git ls-files lib`.split("\n")
 
-  s.add_dependency("memcached", ">= 0")
+  s.add_dependency('memcached')
 
   s.add_development_dependency('rack')
   s.add_development_dependency('rake')
