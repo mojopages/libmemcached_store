@@ -355,6 +355,16 @@ describe ActiveSupport::Cache::LibmemcachedStore do
       fetch { 1 }.must_equal 1
     end
 
+    it "does not blow up when used with nil expires_in" do
+      options[:expires_in] = nil
+      fetch { 1 }.must_equal 1
+    end
+
+    it "does not blow up when used without expires_in" do
+      options.delete(:expires_in)
+      fetch { 2 }.must_equal 2
+    end
+
     it "keeps a cached value even if the cache expires" do
       fetch { 1 } # fill it
 
