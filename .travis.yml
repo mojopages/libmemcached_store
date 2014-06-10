@@ -7,4 +7,6 @@ gemfile:
   - gemfiles/rails31.gemfile
   - gemfiles/rails32.gemfile
   - gemfiles/rails40.gemfile
+services:
+  - memcached
 
