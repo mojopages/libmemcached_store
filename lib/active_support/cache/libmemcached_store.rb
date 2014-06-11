@@ -88,7 +88,7 @@ module ActiveSupport
 
       def fetch(key, options = nil, &block)
         if block_given?
-          if options && options[:race_condition_ttl]
+          if options && options[:race_condition_ttl] && options[:expires_in]
             fetch_with_race_condition_ttl(key, options, &block)
           else
             key = expanded_key(key)
