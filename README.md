@@ -2,7 +2,7 @@
 
 An ActiveSupport cache store that uses the C-based libmemcached client through Evan Weaver's Ruby/SWIG wrapper, [memcached](https://github.com/evan/memcached). libmemcached is fast (fastest memcache client for Ruby), lightweight, and supports consistent hashing, non-blocking IO, and graceful server failover.
 
-This cache is designed for Rails 3+ applications.
+This cache is designed for Rails 3.2+ applications.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ There are no other dependencies.
 Just add to your Gemfile
 
 ```ruby
-gem 'libmemcached_store', '~> 0.6.0'
+gem 'libmemcached_store', '~> 0.7.1'
 ```
 
 and you're set.
