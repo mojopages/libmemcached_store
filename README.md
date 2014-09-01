@@ -67,6 +67,14 @@ require 'action_dispatch/session/libmemcached_store'
 config.session_store :libmemcached_store, :namespace => '_session', :expire_after => 1800
 ```
 
+Increment / Decrement only work on raw values:
+
+```ruby
+Rails.cache.write 'x', '1', :raw => true
+Rails.cache.increment 'x' # => 2
+Rails.cache.decrement 'x' # => 1
+```
+
 ## Performance
 
 Used with Rails, __libmemcached_store__ is at least 1.5x faster than __dalli__. See [BENCHMARKS](https://github.com/ccocchi/libmemcached_store/blob/master/BENCHMARKS)
