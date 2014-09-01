@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
       Evan Weaver's Ruby/SWIG wrapper, memcached. libmemcached is fast, lightweight,
       and supports consistent hashing, non-blocking IO, and graceful server failover.}
   s.authors     = ["Christopher Cocchi-Perrier", "Ben Hutton", "Jeffrey Hardy"]
-
-  s.files         = `git ls-files lib`.split("\n")
+  s.license     = "MIT"
+  s.files       = `git ls-files lib`.split("\n")
 
   s.add_dependency('memcached')
 
